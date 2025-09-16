@@ -1,4 +1,3 @@
-```python
 import argparse
 import asyncio
 import logging
@@ -8,7 +7,7 @@ from ocpp.routing import on
 from ocpp.v16 import ChargePoint as cp_v16, call as call_v16, call_result as call_result_v16
 from ocpp.v16.enums import RegistrationStatus as RegistrationStatus_v16
 from ocpp.v201 import ChargePoint as cp_v201, call as call_v201, call_result as call_result_v201
-from ocpp.v201.enums import RegistrationStatus as RegistrationStatus_v201
+from ocpp.v201.enums import RegistrationStatusType as RegistrationStatus_v201
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -96,4 +95,3 @@ if __name__ == "__main__":
         logger.info("Server stopped by user")
     except Exception as e:
         logger.error("Server failed: %s", e)
-```
