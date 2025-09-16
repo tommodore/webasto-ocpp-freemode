@@ -1,124 +1,115 @@
-# webasto-ocpp-freemode
+webasto-ocpp-freemode
+A configurable Python script to set OCPP configuration keys (e.g., FreeModeActive for plug-and-charge mode) on Webasto Unite (Vestel EVC04) wallboxes using the Open Charge Point Protocol (OCPP 1.6 or 2.0.1). The script acts as a temporary OCPP central system to send a ChangeConfiguration message, useful when settings are greyed out in the wallbox’s web interface.
+Tested with Webasto Unite firmware v3.187.0-1.0.156.0-v7.0.47 and Home Assistant’s OCPP integration (lbbrhzn/ocpp).
+Features
 
-A Python script to enable `FreeModeActive` (plug-and-charge mode) on Webasto Unite (Vestel EVC04) wallboxes using the Open Charge Point Protocol (OCPP 1.6). This script acts as a temporary OCPP central system to send a `ChangeConfiguration` message, useful when the setting is greyed out in the wallbox’s web interface.
+Set any OCPP configuration key (e.g., FreeModeActive=true for plug-and-charge).
+Supports OCPP 1.6 and 2.0.1.
+Configurable via command-line arguments for host, port, charge point ID, key, and value.
+Detailed logging for debugging.
 
-Tested with Webasto Unite firmware `v3.187.0-1.0.156.0-v7.0.47` and Home Assistant’s OCPP integration (`lbbrhzn/ocpp`).
+Prerequisites
 
-## Prerequisites
+Python 3.6+ (tested with Python 3.13; Python 3.11 or 3.12 recommended for compatibility).
+Python packages: ocpp and websockets.
+Network access: Your computer must be on the same network as the wallbox, with the specified port (default: 9000) open.
+Wallbox configuration: Access to the wallbox’s web interface to set the central system address.
+Charge point ID: Typically wallbox or as configured in the web interface (Ladepunkt-ID).
 
-- **Python 3.6+** (tested with Python 3.13; Python 3.11 or 3.12 recommended for compatibility).
-- **Python packages**: `ocpp` and `websockets`.
-- **Network access**: Your computer must be on the same network as the wallbox, with port 9000 open.
-- **Wallbox configuration**: Access to the wallbox’s web interface to set the central system address.
-- **Charge point ID**: Typically `wallbox` or as configured in the web interface (`Ladepunkt-ID`).
+Installation
 
-## Installation
+Clone the repository:
+git clone <https://github.com/><your_github_username>/webasto-ocpp-freemode.git
+cd webasto-ocpp-freemode
 
-1. **Clone the repository**:
+Set up a virtual environment (recommended):
+python3 -m venv myenv
+source myenv/bin/activate
 
-   ```bash
-   git clone https://github.com/<your_github_username>/webasto-ocpp-freemode.git
-   cd webasto-ocpp-freemode
-   ```
+Install dependencies:
+pip install ocpp websockets
 
-2. **Set up a virtual environment** (optional but recommended):
+Usage
 
-   ```bash
-   python3 -m venv myenv
-   source myenv/bin/activate
-   ```
+Run the script with default settings (sets FreeModeActive=true for charge point wallbox on 0.0.0.0:9000 with OCPP 1.6):
+python3 ocpp_central.py
 
-3. **Install dependencies**:
+Customize parameters (example):
+python3 ocpp_central.py --host 192.168.1.100 --port 9000 --charge-point-id wallbox --ocpp-version 1.6 --key FreeModeActive --value true
 
-   ```bash
-   pip install ocpp websockets
-   ```
+Available arguments:
 
-## Usage
+--host: Server IP (default: 0.0.0.0).
+--port: Server port (default: 9000).
+--charge-point-id: Charge point ID (default: wallbox).
+--ocpp-version: OCPP version (1.6 or 2.0.1, default: 1.6).
+--key: Configuration key (default: FreeModeActive).
+--value: Configuration value (default: true).
 
-1. **Run the script**:
+Configure the wallbox:
 
-   ```bash
-   python3 ocpp_central.py
-   ```
+Access the wallbox’s web interface via its IP address.
+Set the Zentrale Systemadresse (Central System Address) to ws://<your_computer_ip>:<port>/<charge_point_id>.
+Example: ws://192.168.1.100:9000/wallbox.
+Find your computer’s IP:ifconfig | grep "inet " | grep -v 127.0.0.1
 
-   The script starts a websocket server on `ws://0.0.0.0:9000`.
+Save and reboot the wallbox (via web interface or power cycle).
 
-2. **Configure the wallbox**:
-   - Access the wallbox’s web interface via its IP address.
-   - Set the **Zentrale Systemadresse** (Central System Address) to `ws://<your_computer_ip>:9000/<charge_point_id>`.
-     - Replace `<your_computer_ip>` with your computer’s IP (e.g., `192.168.1.100`). Find it with:
+Monitor the output:
 
-       ```bash
-       ifconfig | grep "inet " | grep -v 127.0.0.1
-       ```
+The script logs connection and configuration status:2025-09-16 10:00:00,000 - INFO - Starting OCPP central system on ws://0.0.0.0:9000 with subprotocol ocpp1.6
+2025-09-16 10:00:05,000 - INFO - Charge point connecting: wallbox
+2025-09-16 10:00:05,100 - INFO - Charge point connected: wallbox (vendor: WEBASTO, model: UNITE)
+2025-09-16 10:00:05,200 - INFO - Sending ChangeConfiguration for FreeModeActive=true
+2025-09-16 10:00:05,300 - INFO - Configuration change accepted!
 
-     - Replace `<charge_point_id>` with your wallbox’s charge point ID (e.g., `wallbox`).
-     - Example: `ws://192.168.1.100:9000/wallbox`.
-   - Save and reboot the wallbox (via web interface or power cycle).
+Revert to Home Assistant:
 
-3. **Monitor the output**:
-   - The script will log when the wallbox connects and whether the `FreeModeActive` change is accepted:
+After seeing “Configuration change accepted!”, revert the central system address to your Home Assistant OCPP address (e.g., ws://homeassistant.local:9000/wallbox).
+Save and reboot the wallbox.
+Stop the script with Ctrl+C.
 
-     ```
-     Temporary OCPP central system running on ws://0.0.0.0:9000
-     Charge point connected: wallbox
-     Charge point connected.
-     Sending ChangeConfiguration...
-     Configuration change accepted!
-     ```
+Verify:
 
-4. **Revert to Home Assistant**:
-   - Once you see “Configuration change accepted!”, revert the central system address to your Home Assistant OCPP address (e.g., `ws://homeassistant.local:9000/wallbox`).
-   - Save and reboot the wallbox.
-   - Stop the script with `Ctrl+C`.
+Test plug-and-charge (no RFID needed) to confirm FreeModeActive is enabled.
+The web interface may show the setting greyed out (UI limitation), but the functionality should work.
+Restart the Home Assistant OCPP integration if stopped: Settings > Integrations > OCPP > Start.
 
-5. **Verify**:
-   - Test plug-and-charge (no RFID needed) to confirm `FreeModeActive` is enabled.
-   - The web interface may still show the setting greyed out (UI limitation), but the functionality should work.
-   - Restart the Home Assistant OCPP integration if stopped: **Settings > Integrations > OCPP > Start**.
+Troubleshooting
 
-## Troubleshooting
+ConnectionResetError or ConnectionClosedError:
 
-- **ConnectionResetError or ConnectionClosedError**:
-  - Ensure port 9000 is open: `lsof -i :9000`.
-  - Allow port 9000 in your firewall (**System Settings > Network > Firewall** on macOS).
-  - Verify the wallbox’s central system address includes the charge point ID (e.g., `/wallbox`).
-  - Ping the wallbox: `ping <wallbox_ip>`.
+Ensure the specified port (e.g., 9000) is open: lsof -i :9000.
+Allow the port in your firewall (macOS: System Settings > Network > Firewall).
+Verify the central system address includes the charge point ID (e.g., /wallbox).
+Ping the wallbox: ping <wallbox_ip>.
 
-- **Configuration Rejected**:
-  - If you see “Configuration change rejected: <reason>” (e.g., `NotSupported` or `Rejected`), your firmware may lock `FreeModeActive` due to Eichrecht compliance.
-  - Contact Webasto support with firmware version `v3.187.0-1.0.156.0-v7.0.47` and serial number `7000730623000085` to confirm or request an update.
+Configuration Rejected:
 
-- **No Connection**:
-  - Double-check your computer’s IP and the charge point ID.
-  - If using OCPP 2.0.1 (check web interface), update `ocpp_central.py`:
-    - Replace `from ocpp.v16` with `from ocpp.v201`.
-    - Change `subprotocols=["ocpp1.6"]` to `["ocpp2.0.1"]`.
-    - Test `@on('BootNotification')` vs `@on('boot_notification')`.
+If you see “Configuration change rejected: ” (e.g., NotSupported or Rejected), the firmware may lock the key (e.g., due to Eichrecht compliance).
+Contact Webasto support with firmware version v3.187.0-1.0.156.0-v7.0.47 and serial number 7000730623000085.
 
-- **Python 3.13 Issues**:
-  - If errors persist, try Python 3.11:
+No Connection:
 
-    ```bash
-    brew install python@3.11
-    python3.11 -m venv myenv
-    source myenv/bin/activate
-    pip install ocpp websockets
-    python3 ocpp_central.py
-    ```
+Double-check the --host, --port, and --charge-point-id arguments.
+For OCPP 2.0.1, use --ocpp-version 2.0.1:python3 ocpp_central.py --ocpp-version 2.0.1
 
-## Notes
+Python 3.13 Issues:
 
-- **Firmware**: The script was tested with Webasto Unite firmware `v3.187.0-1.0.156.0-v7.0.47`. Other versions may behave differently.
-- **Home Assistant**: This script is a workaround until the `lbbrhzn/ocpp` integration supports arbitrary `ChangeConfiguration` calls. Consider opening a feature request at <https://github.com/lbbrhzn/ocpp>.
-- **Safety**: Avoid active charging sessions during configuration changes.
-- **License**: MIT License (see `LICENSE` file).
+If errors occur, try Python 3.11:brew install python@3.11
+python3.11 -m venv myenv
+source myenv/bin/activate
+pip install ocpp websockets
+python3 ocpp_central.py
 
-## Contributing
+Notes
 
+Firmware: Tested with Webasto Unite firmware v3.187.0-1.0.156.0-v7.0.47. Other versions may vary.
+Home Assistant: This script is a workaround until lbbrhzn/ocpp supports arbitrary ChangeConfiguration calls. Consider requesting this feature at <https://github.com/lbbrhzn/ocpp>.
+Safety: Avoid active charging sessions during configuration changes.
+License: MIT License (see LICENSE file).
+
+Contributing
 Contributions are welcome! Please open an issue or pull request on GitHub.
-
-## License
-
+License
 This project is licensed under the MIT License.
